@@ -1,0 +1,56 @@
+# --- Web framework ---
+fastapi==0.139.0
+starlette==1.3.1
+uvicorn[standard]==0.34.0
+websockets==14.1            # live collaboration (/ws/workspace/*) -- also bundled by uvicorn[standard], declared explicitly since we depend on it directly
+python-multipart==0.0.20
+
+# --- Config & validation ---
+pydantic==2.13.4
+pydantic-settings==2.14.2
+pydantic_core==2.46.4
+python-dotenv==1.2.2
+email-validator==2.3.0
+annotated-doc==0.0.4
+annotated-types==0.7.0
+typing-inspection==0.4.2
+typing_extensions==4.15.0
+
+# --- Database ---
+SQLAlchemy==2.0.51
+psycopg2-binary==2.9.12   # only needed if DATABASE_URL points at Postgres
+
+# --- Auth / security ---
+python-jose[cryptography]==3.3.0
+bcrypt==4.2.1   # used directly (no passlib) -- passlib is unmaintained and breaks on bcrypt>=4.1
+google-auth==2.37.0          # Google Sign-In ID token verification
+pyotp==2.9.0                  # TOTP-based two-factor authentication
+reportlab==4.2.5             # PDF export for the "Full Study Pack" agent workflow
+
+# --- RAG pipeline ---
+PyMuPDF==1.24.14           # imported as `fitz`, PDF text extraction
+sentence-transformers==3.3.1
+chromadb==0.5.23
+rank-bm25==0.2.2
+openai==1.58.1              # used to call Groq's OpenAI-compatible API (default LLM_PROVIDER)
+ollama==0.4.4                # only needed if LLM_PROVIDER=ollama
+langdetect==1.0.9
+
+# --- Scan / OCR ---
+pytesseract==0.3.13        # requires the `tesseract-ocr` system package
+Pillow==11.0.0
+img2pdf==0.5.1             # merges scanned photos into a single PDF
+
+# --- Observability ---
+prometheus-client==0.21.1
+
+# --- Networking helpers ---
+anyio==4.14.1
+dnspython==2.8.0
+idna==3.18
+greenlet==3.5.3
+
+# --- Testing ---
+pytest==8.3.4
+httpx==0.28.1
+trafilatura==1.12.2          # extracts readable article text from web pages (strips nav/ads/boilerplate)

@@ -33,9 +33,9 @@ from src.api.annotation import router as annotation_router
 from src.api.upload import router as upload_router  # Universal upload API
 from src.api.knowledge import router as knowledge_router  # Knowledge Intelligence API
 from src.api.interaction import router as interaction_router  # Knowledge Interaction API
+from src.api.research import router as research_router  # Research Operating System API
 
 # New API scaffolds for future modules
-from src.api.agents import router as research_router
 from src.api.analytics import router as analytics_router
 from src.api.jobs import router as jobs_router
 from src.api.exam import router as exam_router
@@ -174,6 +174,7 @@ app.include_router(annotation_router)
 app.include_router(upload_router)  # Universal upload API
 app.include_router(knowledge_router)  # Knowledge Intelligence API
 app.include_router(interaction_router)  # Knowledge Interaction API
+app.include_router(research_router)  # Research Operating System API
 app.include_router(metrics_router)
 
 # ============================================================================

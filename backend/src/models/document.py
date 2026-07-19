@@ -1,3 +1,10 @@
+"""
+Document Model
+
+Represents an uploaded or imported knowledge source.
+Each document can have associated knowledge intelligence (extracted entities, concepts, etc.).
+"""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
@@ -7,6 +14,13 @@ from src.db.database import Base
 
 
 class Document(Base):
+    """
+    Document model representing an uploaded or imported knowledge source.
+    
+    Documents are processed through the knowledge intelligence pipeline
+    to extract structured knowledge including entities, concepts, relationships,
+    summaries, questions, and flashcards.
+    """
     __tablename__ = "documents"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -41,9 +55,87 @@ class Document(Base):
 
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True)
 
+    # Knowledge extraction status
+    knowledge_extracted = Column(Integer, default=0)  # 0 = not started, 1 = in progress, 2 = complete
+    extraction_error = Column(String, nullable=True)
+
     owner = relationship(
         "User",
         back_populates="documents",
     )
 
     workspace = relationship("Workspace", back_populates="documents")
+    
+    # === Knowledge Intelligence Relationships ===
+    
+    # Summary (one-to-one)
+    summary = relationship(
+        "DocumentSummary",
+        back_populates="document",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
+    
+    # Entities (one-to-many)
+    entities = relationship(
+        "KnowledgeEntity",
+        back_populates="document",
+        cascade="all, delete-orphan"
+    )
+    
+    # Concepts (one-to-many)
+    concepts = relationship(
+        "KnowledgeConcept",
+        back_populates="document",
+        cascade="all, delete-orphan"
+    )
+    
+    # Relationships (one-to-many)
+    relationships = relationship(
+        "KnowledgeRelationship",
+        back_populates="document",
+        cascade="all, delete-orphan"
+    )
+    
+    # Questions (one-to-many)
+    questions = relationship(
+        "GeneratedQuestion",
+        back_populates="document",
+        cascade="all, delete-orphan"
+    )
+    
+    # Flashcards (one-to-many)
+    flashcards = relationship(
+        "KnowledgeFlashcard",
+        back_populates="document",
+        cascade="all, delete-orphan"
+    )
+    
+    # Topics (one-to-many)
+    topics = relationship(
+        "DocumentTopic",
+        back_populates="document",
+        cascade="all, delete-orphan"
+    )
+    
+    # Semantic Tags (one-to-many)
+    semantic_tags = relationship(
+        "SemanticTag",
+        back_populates="document",
+        cascade="all, delete-orphan"
+    )
+    
+    # Sections (one-to-many)
+    sections = relationship(
+        "DocumentSection",
+        back_populates="document",
+        cascade="all, delete-orphan"
+    )
+    
+    # Knowledge Metadata (one-to-one)
+    knowledge_metadata = relationship(
+        "KnowledgeMetadata",
+        back_populates="document",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )

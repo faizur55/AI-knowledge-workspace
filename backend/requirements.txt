@@ -52,5 +52,5 @@ greenlet==3.5.3
 
 # --- Testing ---
 pytest==8.3.4
-httpx==0.28.1
+httpx==0.27.2  # Compatible with ollama 0.4.4
 trafilatura==1.12.2          # extracts readable article text from web pages (strips nav/ads/boilerplate)

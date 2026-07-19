@@ -30,6 +30,7 @@ from src.api.ws import router as ws_router
 from src.api.activity import router as activity_router
 from src.api.flashcard import router as flashcard_router
 from src.api.annotation import router as annotation_router
+from src.api.upload import router as upload_router  # Universal upload API
 
 # New API scaffolds for future modules
 from src.api.agents import router as research_router
@@ -168,6 +169,7 @@ app.include_router(ws_router)
 app.include_router(activity_router)
 app.include_router(flashcard_router)
 app.include_router(annotation_router)
+app.include_router(upload_router)  # Universal upload API
 app.include_router(metrics_router)
 
 # ============================================================================

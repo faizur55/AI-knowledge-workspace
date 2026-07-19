@@ -31,6 +31,15 @@ from src.api.activity import router as activity_router
 from src.api.flashcard import router as flashcard_router
 from src.api.annotation import router as annotation_router
 
+# New API scaffolds for future modules
+from src.api.agents import router as research_router
+from src.api.analytics import router as analytics_router
+from src.api.jobs import router as jobs_router
+from src.api.exam import router as exam_router
+from src.api.video import router as video_router
+from src.api.math import router as math_router
+from src.api.orchestration import router as orchestration_router
+
 from src.models.user import User
 from src.models.document import Document
 from src.models.chat import Chat
@@ -45,17 +54,81 @@ from src.core.security import hash_password
 from contextlib import asynccontextmanager
 
 
+# ============================================================================
+# Enterprise Architecture Global Instances
+# ============================================================================
+
+# These are set in lifespan() after app creation
+orchestrator = None
+task_dispatcher = None
+workflow_engine = None
+
+
+def _initialize_enterprise_components():
+    """
+    Initialize enterprise architecture components.
+    
+    Sets up:
+    - Master Orchestrator with registered agents
+    - Task Dispatcher for async task execution
+    - Workflow Engine with predefined templates
+    """
+    global orchestrator, task_dispatcher, workflow_engine
+    
+    from src.enterprise.orchestrator.master import MasterOrchestrator
+    from src.enterprise.dispatcher.task_dispatcher import TaskDispatcher
+    from src.enterprise.workflows.engine import WorkflowEngine
+    from src.enterprise.agents.base_wrappers import (
+        ChatAgent, DocumentAgent, FlashcardAgent,
+        MindmapAgent, StudyPackAgent, CompareAgent, ScanAgent
+    )
+    
+    # Initialize components
+    orchestrator = MasterOrchestrator()
+    task_dispatcher = TaskDispatcher()
+    workflow_engine = WorkflowEngine()
+    
+    # Register existing functionality as agents
+    orchestrator.register_agent(ChatAgent())
+    orchestrator.register_agent(DocumentAgent())
+    orchestrator.register_agent(FlashcardAgent())
+    orchestrator.register_agent(MindmapAgent())
+    orchestrator.register_agent(StudyPackAgent())
+    orchestrator.register_agent(CompareAgent())
+    orchestrator.register_agent(ScanAgent())
+    
+    logger.info("Enterprise components initialized with %d agents", len(orchestrator.registry))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize database
     with engine.connect() as connection:
         connection.execute(text("SELECT 1"))
     logger.info("Database connected successfully.")
 
     _bootstrap_admin_if_configured()
-
+    
+    # Initialize enterprise components
+    _initialize_enterprise_components()
+    
+    # Start task dispatcher worker
+    if task_dispatcher:
+        await task_dispatcher.start()
+    
+    # Initialize orchestrator (starts agents)
+    if orchestrator:
+        await orchestrator.initialize()
+    
     logger.info("%s started successfully.", settings.APP_NAME)
 
     yield
+    
+    # Cleanup
+    if orchestrator:
+        await orchestrator.shutdown()
+    if task_dispatcher:
+        await task_dispatcher.stop()
 
 
 app = FastAPI(
@@ -96,6 +169,17 @@ app.include_router(activity_router)
 app.include_router(flashcard_router)
 app.include_router(annotation_router)
 app.include_router(metrics_router)
+
+# ============================================================================
+# Future Module Scaffolds (ready for implementation)
+# ============================================================================
+app.include_router(orchestration_router)  # Agent orchestration API
+app.include_router(research_router)       # Research features
+app.include_router(analytics_router)       # Analytics features
+app.include_router(jobs_router)            # Job hunting features
+app.include_router(exam_router)            # Exam preparation features
+app.include_router(video_router)            # Video processing features
+app.include_router(math_router)           # Math/science features
 
 # --- Optional: serve the built frontend from this same process ---------
 # The two-container (nginx + backend) setup in docker-compose.yml is the

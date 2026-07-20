@@ -35,6 +35,7 @@ from src.api.knowledge import router as knowledge_router  # Knowledge Intelligen
 from src.api.interaction import router as interaction_router  # Knowledge Interaction API
 from src.api.research import router as research_router  # Research Operating System API
 from src.api.multi_agent import router as multi_agent_router  # Multi-Agent System API
+from src.api.multilingual import router as multilingual_router  # Multilingual Intelligence API
 
 # New API scaffolds for future modules
 from src.api.analytics import router as analytics_router
@@ -177,6 +178,7 @@ app.include_router(knowledge_router)  # Knowledge Intelligence API
 app.include_router(interaction_router)  # Knowledge Interaction API
 app.include_router(research_router)  # Research Operating System API
 app.include_router(multi_agent_router)  # Multi-Agent System API
+app.include_router(multilingual_router)  # Multilingual Intelligence API
 app.include_router(metrics_router)
 
 # ============================================================================

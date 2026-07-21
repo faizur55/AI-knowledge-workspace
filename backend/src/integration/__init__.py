@@ -16,6 +16,10 @@ from src.integration.events import (
     EventPublisher,
     get_event_bus,
     create_publisher,
+    EventBridge,
+    UnifiedEventPublisher,
+    get_event_bridge,
+    get_unified_event_publisher,
 )
 
 from src.integration.pipeline import (
@@ -41,6 +45,10 @@ __all__ = [
     "EventPublisher",
     "get_event_bus",
     "create_publisher",
+    "EventBridge",
+    "UnifiedEventPublisher",
+    "get_event_bridge",
+    "get_unified_event_publisher",
     # Pipeline
     "MasterIngestionPipeline",
     "ProcessingStage",

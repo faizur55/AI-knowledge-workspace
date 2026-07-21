@@ -189,7 +189,6 @@ app.include_router(metrics_router)
 # Future Module Scaffolds (ready for implementation)
 # ============================================================================
 app.include_router(orchestration_router)  # Agent orchestration API
-app.include_router(research_router)       # Research features
 app.include_router(analytics_router)       # Analytics features
 app.include_router(jobs_router)            # Job hunting features
 app.include_router(exam_router)            # Exam preparation features

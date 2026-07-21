@@ -134,7 +134,7 @@ class KnowledgeSource(Base):
     # - GitHub: {"repo": "...", "owner": "...", "branch": "...", "path": "..."}
     # - Video: {"duration": 3600, "transcript": "...", "thumbnail_url": "..."}
     # - Research: {"authors": [...], "abstract": "...", "doi": "...", "venue": "..."}
-    metadata = Column(JSON, nullable=True, default=dict)
+    source_metadata = Column(JSON, nullable=True, default=dict)
     
     # Tags for organization and discovery
     tags = Column(JSON, nullable=True, default=list)

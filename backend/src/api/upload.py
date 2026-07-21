@@ -8,6 +8,7 @@ support for all knowledge source types.
 from typing import Optional, List
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from sqlalchemy.orm import Session
+from pydantic import BaseModel, Field
 
 from src.db.database import get_db
 from src.dependencies.auth import get_current_user

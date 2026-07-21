@@ -20,42 +20,43 @@ class User(Base):
 
     google_sub = Column(String, unique=True, nullable=True, index=True)
 
-    # RBAC: one of "admin", "employee", "customer".
-    # Kept as a plain string (not an Enum) so SQLite migrations stay simple.
+    # RBAC
     role = Column(String, nullable=False, default="customer")
 
     is_active = Column(Integer, nullable=False, default=1)
 
-    # Bumped on password change / "log out everywhere" -- embedded in every
-    # issued JWT, so bumping it instantly invalidates all previously issued
-    # access AND refresh tokens without needing a token blacklist table.
+    # JWT token version
     token_version = Column(Integer, nullable=False, default=0)
 
-    # --- Account lockout ---
+    # Account lockout
     failed_login_attempts = Column(Integer, nullable=False, default=0)
     locked_until = Column(DateTime, nullable=True)
 
-    # --- Password reset ---
+    # Password reset
     reset_token_hash = Column(String, nullable=True)
     reset_token_expires = Column(DateTime, nullable=True)
 
-    # --- Email verification ---
+    # Email verification
     email_verified = Column(Integer, nullable=False, default=0)
     verification_token_hash = Column(String, nullable=True)
     verification_token_expires = Column(DateTime, nullable=True)
 
-    # --- Two-factor authentication (TOTP) ---
+    # Two-factor authentication
     totp_secret = Column(String, nullable=True)
     totp_enabled = Column(Integer, nullable=False, default=0)
-    # One-time backup codes for when the user loses their authenticator
-    # device -- stored hashed (like a password), comma-joined hashes.
     totp_backup_codes_hash = Column(String, nullable=True)
 
     theme = Column(String, nullable=False, default="dark")
 
     created_at = Column(
-        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
+
+    # ------------------------------------------------------------------
+    # Relationships
+    # ------------------------------------------------------------------
 
     documents = relationship(
         "Document",
@@ -67,10 +68,22 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    
+
     workspaces = relationship(
         "Workspace",
         back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+
+    collections = relationship(
+        "KnowledgeCollection",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    workspace_layouts = relationship(
+        "WorkspaceLayout",
+        back_populates="user",
         cascade="all, delete-orphan",
     )
 

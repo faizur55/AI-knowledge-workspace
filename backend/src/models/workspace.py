@@ -81,7 +81,7 @@ class Workspace(Base):
     archived_at = Column(DateTime, nullable=True)
     
     # Metadata (extensible JSON for future use)
-    metadata = Column(JSON, nullable=True, default=dict)
+    settings_metadata = Column(JSON)
     
     # Relationships
     owner = relationship("User", back_populates="workspaces")
@@ -177,7 +177,7 @@ class Workspace(Base):
             "processing_status": self.processing_status,
             "last_processed_at": self.last_processed_at.isoformat() if self.last_processed_at else None,
             "archived_at": self.archived_at.isoformat() if self.archived_at else None,
-            "metadata": self.metadata or {},
+            "metadata": self.settings_metadata or {},
         }
     
     def __repr__(self) -> str:

@@ -314,7 +314,7 @@ class KnowledgeAudit(Base):
     processing_duration_ms = Column(Integer, nullable=True)
     
     # Metadata
-    metadata = Column(JSON, nullable=True)
+    validation_metadata = Column(JSON, nullable=True)
     
     created_at = Column(
         DateTime,

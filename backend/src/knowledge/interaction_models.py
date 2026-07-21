@@ -372,7 +372,10 @@ class WorkspaceLayout(Base):
     )
 
     # Relationships
-    user = relationship("User")
+    user = relationship(
+        "User",
+        back_populates="workspace_layouts"
+    )
     workspace = relationship("Workspace")
     document = relationship("Document")
 

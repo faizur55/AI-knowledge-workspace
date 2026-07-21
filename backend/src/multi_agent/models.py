@@ -108,7 +108,7 @@ class Agent(Base):
     )
 
     # Relationships
-    executions = relationship("AgentExecution", back_populates="agent")
+    # executions = relationship("AgentExecution", back_populates="agent")
 
     __table_args__ = (
         Index('ix_agents_agent_id', 'agent_id', unique=True),

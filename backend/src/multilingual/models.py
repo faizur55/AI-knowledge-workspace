@@ -353,7 +353,7 @@ class LanguageMetric(Base):
     cache_hit = Column(Boolean, default=False)
     
     # Additional data
-    metadata = Column(JSON, nullable=True)
+    processing_metadata = Column(JSON, nullable=True)
     
     created_at = Column(
         DateTime,

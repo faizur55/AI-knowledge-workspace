@@ -13,20 +13,29 @@ from dataclasses import dataclass, field
 from sqlalchemy.orm import Session
 
 from src.multi_agent.models import (
-    Agent, WorkflowExecution, TaskExecution, AgentMemory, AgentEvent,
-    WorkflowStatus, TaskStatus, ExecutionStatus
+    WorkflowExecution,
+    TaskExecution,
+    AgentEvent,
+    WorkflowStatus,
+    TaskStatus,
 )
-from src.multi_agent.registry.registry import AgentRegistry, get_agent_registry, AgentMetadata, AgentCapabilities
+from src.multi_agent.registry.registry import (
+    AgentRegistry,
+    get_agent_registry,
+    AgentMetadata,
+)
 from src.core.logging import logger
 
 
 @dataclass
 class WorkflowGoal:
     """User goal for workflow."""
+
     goal: str
+    user_id: int
+
     context: Optional[Dict[str, Any]] = None
     capabilities_needed: List[str] = field(default_factory=list)
-    user_id: int
 
 
 @dataclass

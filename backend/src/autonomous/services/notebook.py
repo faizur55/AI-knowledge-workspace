@@ -11,7 +11,12 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from src.autonomous.models import IntelligentNotebook, LearningPath, KnowledgeInsight
+from src.autonomous.models import (
+    IntelligentNotebook,
+    LearningPath,
+    KnowledgeNode,
+    KnowledgeInsight,
+)
 from src.models.document import Document
 from src.knowledge.models import KnowledgeConcept, KnowledgeEntity, GeneratedQuestion, KnowledgeFlashcard
 from src.core.logging import logger

@@ -13,7 +13,7 @@ from sqlalchemy import func, or_
 from src.multilingual.detector import get_language_detector
 from src.multilingual.registry import get_language_registry
 from src.models.document import Document
-from src.knowledge.models import DocumentChunk
+from src.knowledge.models import KnowledgeEntity, KnowledgeConcept
 from src.core.logging import logger
 
 logger = logging.getLogger(__name__)
@@ -108,48 +108,51 @@ class CrossLanguageSearchService:
         1. Searches by text similarity (fallback when embeddings unavailable)
         2. Would integrate with vector database for production
         """
-        # Build base query
-        query_base = self.db.query(DocumentChunk).join(Document).filter(
+        # Build base query for entities
+        entity_query = self.db.query(KnowledgeEntity).join(Document).filter(
             Document.owner_id == user_id
         )
         
-        # Apply language filter
+        # Apply language filter via document
         if language_filter:
-            query_base = query_base.filter(DocumentChunk.language == language_filter)
+            entity_query = entity_query.join(
+                Document, KnowledgeEntity.document_id == Document.id
+            ).filter(Document.language_code == language_filter)
         
         # Apply document filter
         if document_ids:
-            query_base = query_base.filter(DocumentChunk.document_id.in_(document_ids))
+            entity_query = entity_query.filter(KnowledgeEntity.document_id.in_(document_ids))
         
-        # Get all chunks (in production, this would use vector similarity)
-        all_chunks = query_base.all()
+        # Get all entities
+        all_entities = entity_query.all()
         
-        # Score chunks by relevance (simplified - uses keyword matching)
-        scored_chunks = []
+        # Score entities by relevance (simplified - uses keyword matching)
+        scored_entities = []
         query_words = set(query.lower().split())
         
-        for chunk in all_chunks:
-            chunk_text = (chunk.content or "").lower()
-            chunk_words = set(chunk_text.split())
+        for entity in all_entities:
+            entity_text = ((entity.description or "") + " " + (entity.name or "")).lower()
+            entity_words = set(entity_text.split())
             
             # Calculate keyword overlap score
-            overlap = len(query_words & chunk_words)
+            overlap = len(query_words & entity_words)
             if overlap > 0:
                 score = overlap / max(len(query_words), 1)
                 
-                scored_chunks.append({
-                    "chunk_id": chunk.id,
-                    "document_id": chunk.document_id,
-                    "content": chunk.content,
-                    "language": chunk.language,
+                scored_entities.append({
+                    "entity_id": entity.id,
+                    "document_id": entity.document_id,
+                    "name": entity.name,
+                    "description": entity.description,
+                    "entity_type": entity.entity_type.value if hasattr(entity.entity_type, 'value') else entity.entity_type,
                     "score": score,
                     "match_type": "keyword"
                 })
         
         # Sort by score and return top results
-        scored_chunks.sort(key=lambda x: x["score"], reverse=True)
+        scored_entities.sort(key=lambda x: x["score"], reverse=True)
         
-        return scored_chunks[:limit]
+        return scored_entities[:limit]
     
     def search_with_expansion(
         self,

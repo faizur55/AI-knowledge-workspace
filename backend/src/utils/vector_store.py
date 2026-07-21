@@ -87,7 +87,6 @@ def get_document_chunks_sample(document_id: int, max_chunks: int = 40):
         paired = [paired[int(i * step)] for i in range(max_chunks)]
 
     return [doc for doc, _ in paired], [meta for _, meta in paired]
-    return re.findall(r"[a-z0-9]+", text.lower())
 
 
 def _tokenize(text: str) -> list[str]:

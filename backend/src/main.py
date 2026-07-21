@@ -38,6 +38,7 @@ from src.api.multi_agent import router as multi_agent_router  # Multi-Agent Syst
 from src.api.multilingual import router as multilingual_router  # Multilingual Intelligence API
 from src.autonomous.api.autonomous import router as autonomous_router  # Autonomous Learning System API
 from src.api.integration import router as integration_router  # Autonomous Integration & Activation Layer
+from src.api.work_intelligence import router as work_intelligence_router  # AI Work Intelligence Layer
 
 # New API scaffolds for future modules
 from src.api.analytics import router as analytics_router
@@ -183,6 +184,7 @@ app.include_router(multi_agent_router)  # Multi-Agent System API
 app.include_router(multilingual_router)  # Multilingual Intelligence API
 app.include_router(autonomous_router)  # Autonomous Learning System API
 app.include_router(integration_router)  # Autonomous Integration & Activation Layer
+app.include_router(work_intelligence_router)  # AI Work Intelligence Layer
 app.include_router(metrics_router)
 
 # ============================================================================

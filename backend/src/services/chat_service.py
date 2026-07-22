@@ -25,6 +25,37 @@ from src.services.workspace_service import (
     get_workspace_document_ids, user_can_access_workspace,
 )
 
+# Event emitter for WebSocket broadcasting
+_event_emitter = None
+
+def _get_event_emitter():
+    """Get event emitter instance."""
+    global _event_emitter
+    if _event_emitter is None:
+        try:
+            from src.core.event_emitter import get_event_emitter
+            _event_emitter = get_event_emitter()
+        except ImportError:
+            pass
+    return _event_emitter
+
+
+async def _emit_ws_event(event_type: str, data: dict = None, workspace_id: int = None, document_id: int = None, user_id: int = None):
+    """Emit an event via WebSocket."""
+    emitter = _get_event_emitter()
+    if emitter:
+        try:
+            await emitter.emit(
+                event_type=event_type,
+                data=data or {},
+                workspace_id=workspace_id,
+                document_id=document_id,
+                user_id=user_id,
+                immediate=True,
+            )
+        except Exception as e:
+            logger.error(f"Failed to emit WS event {event_type}: {e}")
+
 
 def _event(event_type: str, **fields) -> str:
     """Every line of the chat stream is one JSON object + newline (NDJSON).
@@ -63,6 +94,28 @@ def chat(
             .filter(Document.id == document_id, Document.owner_id == current_user.id)
             .first()
         )
+
+    # Emit RAG query started event via WebSocket
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(_emit_ws_event(
+                "rag:query:started",
+                {"message": f"Query started: {question[:100]}...", "question": question},
+                workspace_id=workspace_id,
+                document_id=document_id,
+                user_id=current_user.id,
+            ))
+        else:
+            loop.run_until_complete(_emit_ws_event(
+                "rag:query:started",
+                {"message": f"Query started: {question[:100]}...", "question": question},
+                workspace_id=workspace_id,
+                document_id=document_id,
+                user_id=current_user.id,
+            ))
+    except Exception:
+        pass
 
     def generate():
 
@@ -122,6 +175,28 @@ def chat(
         question_embedding = generate_embeddings([question])[0]
         yield _event("status", stage="embedding", label="Question embedded", done=True)
 
+        # Emit embedding event via WebSocket
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(_emit_ws_event(
+                    "rag:embedding",
+                    {"message": "Query embedded"},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+            else:
+                loop.run_until_complete(_emit_ws_event(
+                    "rag:embedding",
+                    {"message": "Query embedded"},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+        except Exception:
+            pass
+
         # ---------------------------------------------------
         # Hybrid Retrieval
         # ---------------------------------------------------
@@ -130,6 +205,28 @@ def chat(
             if workspace_id else "Searching document (vector + keyword)..."
         )
         yield _event("status", stage="retrieval", label=search_label)
+
+        # Emit retrieval started via WebSocket
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(_emit_ws_event(
+                    "rag:retrieval:started",
+                    {"message": search_label},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+            else:
+                loop.run_until_complete(_emit_ws_event(
+                    "rag:retrieval:started",
+                    {"message": search_label},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+        except Exception:
+            pass
 
         if workspace_id:
             documents, metadatas = hybrid_search_multi(
@@ -145,6 +242,29 @@ def chat(
                 document_id=document_id,
                 n_results=20,
             )
+        
+        # Emit retrieval completed via WebSocket with chunks
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(_emit_ws_event(
+                    "rag:retrieval:completed",
+                    {"message": f"Found {len(documents)} candidate passages", "chunks_count": len(documents)},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+            else:
+                loop.run_until_complete(_emit_ws_event(
+                    "rag:retrieval:completed",
+                    {"message": f"Found {len(documents)} candidate passages", "chunks_count": len(documents)},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+        except Exception:
+            pass
+
         yield _event(
             "status", stage="retrieval", done=True,
             label=f"Found {len(documents)} candidate passages",
@@ -154,7 +274,52 @@ def chat(
         # Rerank
         # ---------------------------------------------------
         yield _event("status", stage="rerank", label="Reranking for relevance...")
+
+        # Emit reranking started via WebSocket
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(_emit_ws_event(
+                    "rag:reranking:started",
+                    {"message": "Reranking passages for relevance"},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+            else:
+                loop.run_until_complete(_emit_ws_event(
+                    "rag:reranking:started",
+                    {"message": "Reranking passages for relevance"},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+        except Exception:
+            pass
+
         documents, metadatas, scores = rerank(question=question, documents=documents, metadatas=metadatas, top_k=5)
+        
+        # Emit reranking completed via WebSocket
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(_emit_ws_event(
+                    "rag:reranking:completed",
+                    {"message": f"Selected top {len(documents)} passages"},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+            else:
+                loop.run_until_complete(_emit_ws_event(
+                    "rag:reranking:completed",
+                    {"message": f"Selected top {len(documents)} passages"},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+        except Exception:
+            pass
         yield _event(
             "status", stage="rerank", done=True,
             label=f"Selected top {len(documents)} passages",
@@ -205,6 +370,28 @@ def chat(
         # ---------------------------------------------------
         doc_language_name = (document.language_name if document else None) or "English"
 
+        # Emit generation started via WebSocket
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(_emit_ws_event(
+                    "rag:generation:started",
+                    {"message": "Generating answer..."},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+            else:
+                loop.run_until_complete(_emit_ws_event(
+                    "rag:generation:started",
+                    {"message": "Generating answer..."},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+        except Exception:
+            pass
+
         yield _event("status", stage="generation", label=f"Generating answer ({doc_language_name})...")
 
         answer = ""
@@ -242,6 +429,28 @@ def chat(
         db.commit()
 
         CHAT_LATENCY.observe(time.perf_counter() - start_time)
+
+        # Emit RAG completed via WebSocket
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(_emit_ws_event(
+                    "rag:completed",
+                    {"message": "Query completed", "answer_length": len(answer), "citations_count": len(unique_citations)},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+            else:
+                loop.run_until_complete(_emit_ws_event(
+                    "rag:completed",
+                    {"message": "Query completed", "answer_length": len(answer), "citations_count": len(unique_citations)},
+                    workspace_id=workspace_id,
+                    document_id=document_id,
+                    user_id=current_user.id,
+                ))
+        except Exception:
+            pass
 
         # Live collaboration: push the completed turn to every other
         # member currently connected to this workspace. Runs in a worker

@@ -40,6 +40,7 @@ from src.autonomous.api.autonomous import router as autonomous_router  # Autonom
 from src.api.integration import router as integration_router  # Autonomous Integration & Activation Layer
 from src.api.work_intelligence import router as work_intelligence_router  # AI Work Intelligence Layer
 from src.api.execution import router as execution_router  # AI Execution Layer
+from src.api.events import router as events_router  # Real-time Event Stream
 
 # New API scaffolds for future modules
 from src.api.analytics import router as analytics_router
@@ -71,6 +72,7 @@ from contextlib import asynccontextmanager
 orchestrator = None
 task_dispatcher = None
 workflow_engine = None
+event_emitter = None
 
 
 def _initialize_enterprise_components():
@@ -81,8 +83,9 @@ def _initialize_enterprise_components():
     - Master Orchestrator with registered agents
     - Task Dispatcher for async task execution
     - Workflow Engine with predefined templates
+    - Event Emitter for real-time updates
     """
-    global orchestrator, task_dispatcher, workflow_engine
+    global orchestrator, task_dispatcher, workflow_engine, event_emitter
     
     from src.enterprise.orchestrator.master import MasterOrchestrator
     from src.enterprise.dispatcher.task_dispatcher import TaskDispatcher
@@ -91,11 +94,15 @@ def _initialize_enterprise_components():
         ChatAgent, DocumentAgent, FlashcardAgent,
         MindmapAgent, StudyPackAgent, CompareAgent, ScanAgent
     )
+    from src.core.event_emitter import get_event_emitter
+    from src.core.ws_manager import manager
     
     # Initialize components
     orchestrator = MasterOrchestrator()
     task_dispatcher = TaskDispatcher()
     workflow_engine = WorkflowEngine()
+    event_emitter = get_event_emitter()
+    event_emitter.set_ws_manager(manager)
     
     # Register existing functionality as agents
     orchestrator.register_agent(ChatAgent())
@@ -121,6 +128,10 @@ async def lifespan(app: FastAPI):
     # Initialize enterprise components
     _initialize_enterprise_components()
     
+    # Start event emitter
+    if event_emitter:
+        await event_emitter.start()
+    
     # Start task dispatcher worker
     if task_dispatcher:
         await task_dispatcher.start()
@@ -134,6 +145,8 @@ async def lifespan(app: FastAPI):
     yield
     
     # Cleanup
+    if event_emitter:
+        await event_emitter.stop()
     if orchestrator:
         await orchestrator.shutdown()
     if task_dispatcher:
@@ -187,6 +200,7 @@ app.include_router(autonomous_router)  # Autonomous Learning System API
 app.include_router(integration_router)  # Autonomous Integration & Activation Layer
 app.include_router(work_intelligence_router)  # AI Work Intelligence Layer
 app.include_router(execution_router)  # AI Execution Layer
+app.include_router(events_router)  # Real-time Event Stream
 app.include_router(metrics_router)
 
 # ============================================================================

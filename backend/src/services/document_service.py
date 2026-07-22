@@ -1,5 +1,6 @@
 import os
 from uuid import uuid4
+import asyncio
 
 from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session
@@ -26,6 +27,36 @@ UPLOAD_DIR = "uploads"
 
 PDF_MAGIC_BYTES = b"%PDF-"
 
+# Event emitter for real-time updates
+_event_emitter = None
+
+def _get_event_emitter():
+    """Get event emitter instance."""
+    global _event_emitter
+    if _event_emitter is None:
+        try:
+            from src.core.event_emitter import get_event_emitter
+            _event_emitter = get_event_emitter()
+        except ImportError:
+            pass
+    return _event_emitter
+
+async def _emit_event(event_type: str, data: dict = None, document_id: int = None, workspace_id: int = None, user_id: int = None):
+    """Emit an event to connected clients."""
+    emitter = _get_event_emitter()
+    if emitter:
+        try:
+            await emitter.emit(
+                event_type=event_type,
+                data=data or {},
+                document_id=document_id,
+                workspace_id=workspace_id,
+                user_id=user_id,
+                immediate=True,
+            )
+        except Exception as e:
+            logger.error(f"Failed to emit event {event_type}: {e}")
+
 
 def _safe_original_name(filename: str) -> str:
     """Strip any path components a client might sneak into the filename."""
@@ -46,13 +77,35 @@ def _ingest_pages(
     for scanned images), but everything downstream of "I have page-shaped
     text" is identical, so it lives here once instead of four times.
     """
+    # Emit pipeline started event
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(_emit_event(
+                "pipeline:start",
+                {"message": f"Starting document processing for {document.filename}", "pages": len(pages)},
+                document_id=document.id,
+                user_id=current_user.id,
+            ))
+        else:
+            loop.run_until_complete(_emit_event(
+                "pipeline:start",
+                {"message": f"Starting document processing for {document.filename}", "pages": len(pages)},
+                document_id=document.id,
+                user_id=current_user.id,
+            ))
+    except Exception:
+        pass
+    
     all_chunks = []
     all_embeddings = []
     all_ids = []
     all_metadatas = []
 
     sample_text_for_language = ""
-
+    
+    total_pages = len(pages)
+    
     for page_data in pages:
         page_number = page_data["page"]
         page_text = page_data["text"]
@@ -60,9 +113,49 @@ def _ingest_pages(
         if len(sample_text_for_language) < 500:
             sample_text_for_language += " " + page_text
 
+        # Emit chunking event
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(_emit_event(
+                    "chunking:started",
+                    {"message": f"Chunking page {page_number}/{total_pages}", "page": page_number, "total_pages": total_pages},
+                    document_id=document.id,
+                    user_id=current_user.id,
+                ))
+            else:
+                loop.run_until_complete(_emit_event(
+                    "chunking:started",
+                    {"message": f"Chunking page {page_number}/{total_pages}", "page": page_number, "total_pages": total_pages},
+                    document_id=document.id,
+                    user_id=current_user.id,
+                ))
+        except Exception:
+            pass
+
         chunks = chunk_text(page_text)
         if not chunks:
             continue
+
+        # Emit embedding event
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(_emit_event(
+                    "embedding:started",
+                    {"message": f"Generating embeddings for {len(chunks)} chunks", "chunk_count": len(chunks)},
+                    document_id=document.id,
+                    user_id=current_user.id,
+                ))
+            else:
+                loop.run_until_complete(_emit_event(
+                    "embedding:started",
+                    {"message": f"Generating embeddings for {len(chunks)} chunks", "chunk_count": len(chunks)},
+                    document_id=document.id,
+                    user_id=current_user.id,
+                ))
+        except Exception:
+            pass
 
         embeddings = generate_embeddings(chunks)
 
@@ -77,8 +170,68 @@ def _ingest_pages(
                 "page": page_number,
                 "chunk": index + 1,
             })
+        
+        # Emit chunking completed
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(_emit_event(
+                    "chunking:completed",
+                    {"message": f"Chunked page {page_number}", "page": page_number, "chunks_created": len(chunks)},
+                    document_id=document.id,
+                    user_id=current_user.id,
+                ))
+            else:
+                loop.run_until_complete(_emit_event(
+                    "chunking:completed",
+                    {"message": f"Chunked page {page_number}", "page": page_number, "chunks_created": len(chunks)},
+                    document_id=document.id,
+                    user_id=current_user.id,
+                ))
+        except Exception:
+            pass
+
+    # Emit embedding completed
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(_emit_event(
+                "embedding:completed",
+                {"message": f"Embeddings generated for {len(all_chunks)} chunks", "total_chunks": len(all_chunks)},
+                document_id=document.id,
+                user_id=current_user.id,
+            ))
+        else:
+            loop.run_until_complete(_emit_event(
+                "embedding:completed",
+                {"message": f"Embeddings generated for {len(all_chunks)} chunks", "total_chunks": len(all_chunks)},
+                document_id=document.id,
+                user_id=current_user.id,
+            ))
+    except Exception:
+        pass
 
     if all_chunks:
+        # Emit indexing event
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(_emit_event(
+                    "indexing:started",
+                    {"message": "Indexing documents in vector store", "document_count": len(all_ids)},
+                    document_id=document.id,
+                    user_id=current_user.id,
+                ))
+            else:
+                loop.run_until_complete(_emit_event(
+                    "indexing:started",
+                    {"message": "Indexing documents in vector store", "document_count": len(all_ids)},
+                    document_id=document.id,
+                    user_id=current_user.id,
+                ))
+        except Exception:
+            pass
+        
         add_documents(
             ids=all_ids,
             documents=all_chunks,
@@ -86,10 +239,70 @@ def _ingest_pages(
             metadatas=all_metadatas,
         )
 
+    # Emit language detection
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(_emit_event(
+                "language:detection:started",
+                {"message": "Detecting document language"},
+                document_id=document.id,
+                user_id=current_user.id,
+            ))
+        else:
+            loop.run_until_complete(_emit_event(
+                "language:detection:started",
+                {"message": "Detecting document language"},
+                document_id=document.id,
+                user_id=current_user.id,
+            ))
+    except Exception:
+        pass
+
     language_code, language_name = detect_language(sample_text_for_language)
     document.language_code = language_code
     document.language_name = language_name
     db.commit()
+
+    # Emit language detection completed
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(_emit_event(
+                "language:detection:completed",
+                {"message": f"Language detected: {language_name}", "language_code": language_code, "language_name": language_name},
+                document_id=document.id,
+                user_id=current_user.id,
+            ))
+        else:
+            loop.run_until_complete(_emit_event(
+                "language:detection:completed",
+                {"message": f"Language detected: {language_name}", "language_code": language_code, "language_name": language_name},
+                document_id=document.id,
+                user_id=current_user.id,
+            ))
+    except Exception:
+        pass
+
+    # Emit document processed
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(_emit_event(
+                "document:processed",
+                {"message": "Document processed successfully", "document_id": document.id, "filename": document.filename, "pages": len(pages), "chunks": len(all_chunks), "language": language_code},
+                document_id=document.id,
+                user_id=current_user.id,
+            ))
+        else:
+            loop.run_until_complete(_emit_event(
+                "document:processed",
+                {"message": "Document processed successfully", "document_id": document.id, "filename": document.filename, "pages": len(pages), "chunks": len(all_chunks), "language": language_code},
+                document_id=document.id,
+                user_id=current_user.id,
+            ))
+    except Exception:
+        pass
 
     logger.info(
         "Document ingested: document_id=%s source=%s pages=%d chunks=%d owner_id=%s language=%s",

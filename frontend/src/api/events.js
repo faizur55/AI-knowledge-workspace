@@ -96,30 +96,41 @@ export function useEventStream(workspaceId, options = {}) {
   } = options;
 
   const connect = useCallback(() => {
-    if (!workspaceId) return;
-    
     const token = localStorage.getItem("token");
     if (!token) return;
 
     try {
-      const wsUrl = getWebsocketUrl(`/ws/workspace/${workspaceId}?token=${token}`);
+      // Connect to dedicated event stream endpoint
+      const wsUrl = getWebsocketUrl(`/ws/events?token=${token}${workspaceId ? `&workspace_id=${workspaceId}` : ''}`);
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
         setIsConnected(true);
         setError(null);
+        console.log("Event stream connected");
       };
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           
+          // Handle different message types
+          if (data.type === "connected") {
+            console.log("Event stream authenticated:", data);
+            return;
+          }
+          
+          if (data.type === "heartbeat" || data.type === "pong") {
+            return; // Skip heartbeats
+          }
+          
           // Filter by event types
           if (eventTypes.length === 0 || eventTypes.includes(data.type)) {
             const newEvent = {
               ...data,
               timestamp: data.timestamp || new Date().toISOString(),
+              event_id: data.event_id || `${Date.now()}-${Math.random()}`,
             };
             
             setEvents((prev) => {
@@ -143,9 +154,11 @@ export function useEventStream(workspaceId, options = {}) {
 
       ws.onclose = () => {
         setIsConnected(false);
+        console.log("Event stream disconnected");
         
         if (autoReconnect) {
           reconnectTimeoutRef.current = setTimeout(() => {
+            console.log("Reconnecting to event stream...");
             connect();
           }, 3000);
         }

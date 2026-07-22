@@ -8,71 +8,14 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
-// Placeholder components for future modules
-// These will be implemented when the features are added
-const ComingSoon = ({ title, description }) => (
-  <div className="min-h-screen bg-slate-900 text-white p-8">
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-slate-800 rounded-xl p-8 text-center">
-        <h1 className="text-3xl font-bold mb-4">🚧 {title}</h1>
-        <p className="text-slate-400">{description}</p>
-        <p className="text-slate-500 mt-4 text-sm">
-          This feature is coming soon. Stay tuned!
-        </p>
-      </div>
-    </div>
-  </div>
-);
-
-// Lazy load future pages
-const ResearchPage = () => (
-  <ComingSoon 
-    title="Research" 
-    description="Literature review, source synthesis, and academic research tools."
-  />
-);
-
-const AnalyticsPage = () => (
-  <ComingSoon 
-    title="Analytics" 
-    description="Learning analytics, study insights, and progress tracking."
-  />
-);
-
-const JobsPage = () => (
-  <ComingSoon 
-    title="Job Hunting" 
-    description="Resume analysis, cover letter generation, and interview prep."
-  />
-);
-
-const ExamPage = () => (
-  <ComingSoon 
-    title="Exam Prep" 
-    description="Custom exams, practice questions, and spaced repetition."
-  />
-);
-
-const VideoPage = () => (
-  <ComingSoon 
-    title="Video Learning" 
-    description="Video transcription, summarization, and transcript-based chat."
-  />
-);
-
-const MathPage = () => (
-  <ComingSoon 
-    title="Math & Science" 
-    description="Step-by-step problem solving, formula explanations, and graphs."
-  />
-);
-
-const AgentsPage = () => (
-  <ComingSoon 
-    title="Agent Studio" 
-    description="Custom AI workflows and agent orchestration."
-  />
-);
+// Feature pages - fully implemented
+import Analytics from "./pages/Analytics";
+import Research from "./pages/Research";
+import Jobs from "./pages/Jobs";
+import Exam from "./pages/Exam";
+import Video from "./pages/Video";
+import Math from "./pages/Math";
+import Agents from "./pages/Agents";
 
 export default function App() {
   return (
@@ -111,7 +54,7 @@ export default function App() {
         path="/research"
         element={
           <ProtectedRoute>
-            <ResearchPage />
+            <Research />
           </ProtectedRoute>
         }
       />
@@ -121,7 +64,7 @@ export default function App() {
         path="/analytics"
         element={
           <ProtectedRoute>
-            <AnalyticsPage />
+            <Analytics />
           </ProtectedRoute>
         }
       />
@@ -131,7 +74,7 @@ export default function App() {
         path="/jobs"
         element={
           <ProtectedRoute>
-            <JobsPage />
+            <Jobs />
           </ProtectedRoute>
         }
       />
@@ -141,7 +84,7 @@ export default function App() {
         path="/exam"
         element={
           <ProtectedRoute>
-            <ExamPage />
+            <Exam />
           </ProtectedRoute>
         }
       />
@@ -151,7 +94,7 @@ export default function App() {
         path="/video"
         element={
           <ProtectedRoute>
-            <VideoPage />
+            <Video />
           </ProtectedRoute>
         }
       />
@@ -161,7 +104,7 @@ export default function App() {
         path="/math"
         element={
           <ProtectedRoute>
-            <MathPage />
+            <Math />
           </ProtectedRoute>
         }
       />
@@ -171,7 +114,7 @@ export default function App() {
         path="/agents"
         element={
           <ProtectedRoute>
-            <AgentsPage />
+            <Agents />
           </ProtectedRoute>
         }
       />

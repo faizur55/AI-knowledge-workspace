@@ -15,9 +15,12 @@ import ComparePanel from "../components/ComparePanel";
 import MindMapPanel from "../components/MindMapPanel";
 import CameraScan from "../components/CameraScan";
 import WorkspacesPanel from "../components/WorkspacesPanel";
+import LiveActivity from "../components/LiveActivity";
+import StreamingChat from "../components/StreamingChat";
 
 const TABS = [
   { key: "chat", label: "Chat" },
+  { key: "live", label: "Live Activity" },
   { key: "study", label: "Study Mode" },
   { key: "studypack", label: "AI Agent" },
   { key: "mindmap", label: "Mind Map / Knowledge Graph" },
@@ -218,6 +221,13 @@ export default function Dashboard() {
                   />
                 </div>
               </div>
+            )}
+
+            {activeTab === "live" && (
+              <LiveActivity 
+                workspaceId={selectedWorkspace?.id} 
+                documentId={selectedDocument?.id} 
+              />
             )}
 
             {activeTab === "study" && <StudyPanel selectedDocument={selectedDocument} />}
